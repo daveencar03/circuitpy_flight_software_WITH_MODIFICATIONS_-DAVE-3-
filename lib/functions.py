@@ -21,7 +21,7 @@ class functions:
         self.debug = cubesat.debug
         self.debug_print("Initializing Functionalities")
         self.Errorcount=0
-        self.facestring=[]
+        self.facestring: list = [None, None, None, None, None]
         self.jokes=["Hey Its pretty cold up here, did someone forget to pay the electric bill?"]
         self.last_battery_temp = 20
         self.callsign="KQ4LFD"
