@@ -121,3 +121,46 @@ class PCB:
             print("All requested chunks sent successfully.")
         elif message == "No image data received":
             print("No image data received by 'a' side. Ending chunk transfer process.")
+            
+    def wait_for_command(self):
+        """Continuously check for a command from the FCB before proceeding."""
+        command = b'\x31'
+        while True:
+            print("Checking for command from FCB...")
+            print(command)
+            if command in commands:
+                command_name = commands[command]
+                print(f"Received command: {command_name}")
+
+                if command_name == 'noop':
+                    pass  # No operation, do nothing
+                elif command_name == 'hreset':
+                    print("Resetting hardware.")
+                elif command_name == 'shutdown':
+                    print("Shutting down.")
+                elif command_name == 'query':
+                    print("Processing query.")
+                elif command_name == 'joke_reply':
+                    print("Responding with a joke.")
+                elif command_name == 'send_SOH':
+                    print("Sending start of header.")
+                elif command_name == 'take_pic':
+                    print("Taking a picture.")
+                    self.display_image('RaspberryPiWB128x128.raw')
+                    command = b'\x32'
+                elif command_name == 'send_pic':
+                    print("Sending picture.")
+                    file_path = f"/sd/inspireFly_Capture_{self.last_num-1}.jpg"
+                    try:
+                        with open(file_path, "rb") as file:
+                            jpg_bytes = file.read()
+                        print("File found, initiating data transmission with flight computer...")
+                        self.communicate_with_fcb(jpg_bytes)
+                    except OSError:
+                        print(f"Error: File {file_path} does not exist. Cannot send picture.")
+                elif command_name == 'receive_pic':
+                    print("Receiving picture.")
+            else:
+                print(f"Unknown command received: {command}")
+
+            time.sleep(0.5)  # Adjust polling interval as needed

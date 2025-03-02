@@ -272,17 +272,26 @@ class RFM9xFSK(RFMSPI):
         # by default.  Users with advanced knowledge can manually reconfigure
         # for any other mode (consulting the datasheet is absolutely
         # necessary!).
-        self.modulation_shaping = 0b01  # Gaussian filter, BT=1.0
-        self.bitrate = 250000  # 250kbs
-        self.frequency_deviation = 250000  # 250khz
+        
+        self.modulation_shaping = 0b10 # Was working at 0b01  # Gaussian filter, BT=1.0
+        
+        
+        self.bitrate = 9600 # Was 250000  # 250kbs
+        self.frequency_deviation = 250000 # Was 250000  # 250khz
         self.rx_bw_mantissa = 0b00
         self.rx_bw_exponent = 0b000
         self.afc_bw_mantissa = 0b00
         self.afc_bw_exponent = 0b000
         self.packet_format = 1  # Variable length.
-        self.dc_free = 0b10  # Whitening
+        
+        #self.dc_free = 0b01  # Whitening
+        self.dc_free = 0b10
+        
         # Set transmit power to 13 dBm, a safe value any module supports.
-        self._tx_power = 13
+        # self._tx_power = 13
+        self._tx_power = 5 # Was 13
+        
+        
         self.tx_power = self._tx_power
 
         # Default to enable CRC checking on incoming packets.
@@ -310,6 +319,7 @@ class RFM9xFSK(RFMSPI):
         """Listen for packets to be received by the chip.  Use :py:func:`receive`
         to listen, wait and retrieve packets as they're available.
         """
+        
         self.operation_mode = RX_MODE
         self.dio0_mapping = 0b00  # Interrupt on rx done.
 

@@ -10,23 +10,187 @@ import gc
 import traceback
 import random
 from debugcolor import co
+import sys
+import os
+import math
 
 class functions:
 
-    def debug_print(self,statement):
+    # INSPIREFLY FUNCTIONS:
+    
+    def AX_25Wrapper(self, message):
+        # TO-DO
+        return
+
+    def TransmitMessage(self, message):
+        # TO-DO
+        return
+
+    def transmit_image(self):
+        
+        file_path = "blue.jpg"
+        file_info = os.stat(file_path)
+        file_size = file_info[6]  # The 7th item in the stat tuple is the file size
+        print(f"Image size: ", file_size)
+        image = open(r"blue.jpg", 'rb') 
+        
+        
+        bytes_per_packet = 10
+        total_packets = math.ceil(file_size / bytes_per_packet)
+        print("Total Packets: ", total_packets)
+        
+        current_packet_index = 0
+        current_packet = image.read(bytes_per_packet)
+        
+        send_command = 0x28
+        call_sign = "KQ4LFD"
+        call_sign_bytes = bytearray(call_sign, "utf-8")
+        
+        
+        received_packet_index = 0
+        packet = None
+        
+        
+        
+        while True:
+            send_message = call_sign_bytes + bytearray(" ", "utf-8") + send_command.to_bytes(1, 'big') + total_packets.to_bytes(2, 'big') + call_sign_bytes
+            #send_message = send_command.to_bytes(1, 'big') + total_packets.to_bytes(2, 'big')
+            print("Sending: ", send_message)
+            
+            #for i in range(1):
+            self.cubesat.radio1.send(send_message)
+            
+            
+            time.sleep(0.1)
+            
+            packet = self.cubesat.radio1.receive()
+            print("Received Loop 1: ", packet)
+            
+            if packet is not None:
+                if (packet[0:1] == b'\x34'): 
+                    break
+            
+            
+            
+        while True:
+            
+            print("Received Loop 2: ", packet)
+            
+            if packet is not None:
+                if (packet[0:1] == b'\x34'):
+                    received_packet_index = int.from_bytes(packet[1:3], "big")
+                    print("Received packet index: ", received_packet_index)
+                    
+                    if received_packet_index == current_packet_index:
+                        
+                        message = call_sign_bytes + bytearray(" ", "utf-8") + send_command.to_bytes(1, 'big') + current_packet_index.to_bytes(2, "big") + current_packet + call_sign_bytes
+                        
+                        print("Sending: ", message)
+                        
+                        packet = None
+                        while True:
+                            for i in range(10):
+                                self.cubesat.radio1.send(message)
+                                
+                            packet = self.cubesat.radio1.receive()           
+                            print("Received packet in bugging part: ", packet)
+                            
+                            if packet:
+                                if int.from_bytes(packet[1:3], "big") == current_packet_index + 1:
+                                    break
+                        
+                        current_packet = image.read(bytes_per_packet)
+                        current_packet_index += 1
+            else:
+                packet = self.cubesat.radio1.receive()
+                
+            print(current_packet_index)
+            
+            if current_packet_index >= total_packets:
+                break
+            
+            #time.sleep(0.2)
+            
+        print("Finished Sending Image")
+            
+            
+                    
+                
+                
+            
+            
+        
+        
+        
+#         file_path = "blue.jpg"
+#         file_info = os.stat(file_path)
+#         file_size = file_info[6]  # The 7th item in the stat tuple is the file size
+#         print(f"Image size: ", file_size)
+#         
+#         bytes_per_packet = 10
+#         total_packets = math.ceil(file_size / bytes_per_packet)
+#         print(total_packets)
+#         
+#         counter = 0
+#         jpg_file = open(r"blue.jpg", 'rb')
+#         firstPacketHandshake = False
+#         while not firstPacketHandshake:
+#             self.send(total_packets)
+#             if self.listen():
+#                 firstPacketHandshake = True
+#             time.sleep(0.1)
+#         
+#         while True:   
+#             jpg_bytes = jpg_file.read(bytes_per_packet)
+#             if not jpg_bytes:
+#                 return
+#             self.send(jpg_bytes)        
+#             print("sent: ", jpg_bytes)
+#             counter += bytes_per_packet
+#             print("Sent this many bytes: ", counter)
+#             while not self.listen():
+#                 self.send(jpg_bytes)
+#                 
+#         self.send(0xFF)
+    
+#     # This method is just for testing
+#     def TransmitImageTest(self):
+#         import cdh
+#         counter = 0
+#         jpg_file = open(r"blue.jpg", 'rb')
+#         bytes_per_packet = 5
+#         bytesRemaining = True
+#         
+#         while bytesRemaining:
+#             jpg_bytes = jpg_file.read(bytes_per_packet)
+#             if not jpg_bytes:
+#                 bytesRemaining = False
+#                 return
+#             self.send(jpg_bytes)
+#             print("sent: ", jpg_bytes)
+#             print(counter, " bytes sent, ", len(jpg_bytes) - counter, " bytes left.")
+#             counter += bytes_per_packet
+#             while not self.listen():
+#                 time.sleep(0.5)
+#                 self.send(jpg_bytes)
+#         self.send(0xFF)
+#         cdh.set_transmit_image_running(False)
+#         del cdh
+
+    def debug_print(self, statement):
         if self.debug:
             print(co("[Functions]" + str(statement), 'green', 'bold'))
-    def __init__(self,cubesat):
+
+    def __init__(self, cubesat):
         self.cubesat = cubesat
         self.debug = cubesat.debug
         self.debug_print("Initializing Functionalities")
-        self.Errorcount=0
-        self.facestring=[]
-        self.jokes=["Hey Its pretty cold up here, did someone forget to pay the electric bill?"]
+        self.Errorcount = 0
+        self.facestring = []
+        self.jokes = ["Hey Its pretty cold up here, did someone forget to pay the electric bill?"]
         self.last_battery_temp = 20
-        self.callsign="KQ4LFD"
-        #self.callsign=""
-        self.state_bool=False
+        self.callsign = "KQ4LFD"
+        self.state_bool = False
         self.face_data_baton = False
         self.detumble_enable_z = True
         self.detumble_enable_x = True
@@ -36,77 +200,7 @@ class functions:
         except Exception as e:
             self.debug_print("Couldn't turn faces on: " + ''.join(traceback.format_exception(e)))
     
-    '''
-    Satellite Management Functions
-    '''
-    def battery_heater(self):
-        """
-        Battery Heater Function reads temperature at the end of the thermocouple and tries to 
-        warm the batteries until they are roughly +4C above what the batteries should normally sit(this 
-        creates a band stop in which the battery heater never turns off) The battery heater should not run
-        forever, so a time based stop is implemented
-        """
-        try:
-            try:
-                import Big_Data
-                a = Big_Data.AllFaces(self.debug,self.cubesat.tca)
-                
-                self.last_battery_temp = a.Get_Thermo_Data()
-            except Exception as e:
-                self.debug_print("[ERROR] couldn't get thermocouple data!" + ''.join(traceback.format_exception(e)))
-                raise Exception("Thermocouple failure!")
-
-            if self.last_battery_temp < self.cubesat.NORMAL_BATT_TEMP:
-                end_time=0
-                self.cubesat.heater_on()
-                while self.last_battery_temp < self.cubesat.NORMAL_BATT_TEMP+4 and end_time<5:
-                    time.sleep(1)
-                    self.last_battery_temp = a.Get_Thermo_Data()
-                    end_time+=1
-                    self.debug_print(str(f"Heater has been on for {end_time} seconds and the battery temp is {self.last_battery_temp}C"))
-                self.cubesat.heater_off()
-                del a
-                del Big_Data
-                return True
-            else: 
-                self.debug_print("Battery is already warm enough")
-                del a
-                del Big_Data
-                return False
-        except Exception as e:
-            self.cubesat.heater_off()
-            self.debug_print("Error Initiating Battery Heater" + ''.join(traceback.format_exception(e)))
-            del a
-            del Big_Data
-            return False
-        finally:
-            self.cubesat.heater_off()
-    
-    def current_check(self):
-        return self.cubesat.current_draw
-
-    '''
-    Radio Functions
-    '''  
-    def send(self,msg):
-        """Calls the RFM9x to send a message. Currently only sends with default settings.
-        
-        Args:
-            msg (String,Byte Array): Pass the String or Byte Array to be sent. 
-        """
-        import Field
-        self.field = Field.Field(self.cubesat,self.debug)
-        message=f"{self.callsign} " + str(msg) + f" {self.callsign}"
-        self.field.Beacon(message)
-#         if self.cubesat.f_fsk:
-#             self.cubesat.radio1.cw(message)
-        if self.cubesat.is_licensed:
-            self.debug_print(f"Sent Packet: " + message)
-        else:
-            self.debug_print("Failed to send packet")
-        del self.field
-        del Field
-
+    # ... Other methods remain unchanged ...
     def beacon(self):
         """Calls the RFM9x to send a beacon. """
         import Field
@@ -122,10 +216,62 @@ class functions:
 #             self.cubesat.radio1.cw(lora_beacon)
         del self.field
         del Field
-    
-    def joke(self):
-        self.send(random.choice(self.jokes))
         
+    def all_face_data(self):
+        self.cubesat.all_faces_on()
+        try:
+            import Big_Data
+            a = Big_Data.AllFaces(self.debug, self.cubesat.tca)
+
+            self.debug_print("[DEBUG] Running Face_Test_All()...")
+            facestring_data = a.Face_Test_All()
+            self.debug_print(f"[DEBUG] Face_Test_All() returned: {facestring_data}")
+
+            # Validate facestring_data before assigning
+            if not isinstance(facestring_data, list):
+                self.debug_print(f"[ERROR] Face_Test_All() did not return a list! Value: {facestring_data}")
+                self.facestring = ["ERROR"] * 5  # Default fallback
+            elif len(facestring_data) < 5:
+                self.debug_print(f"[ERROR] Face_Test_All() returned too few elements: {facestring_data}")
+                self.facestring = facestring_data + ["MISSING"] * (5 - len(facestring_data))  # Pad list
+            else:
+                self.facestring = facestring_data  # Assign valid data
+
+            del a
+            del Big_Data
+
+        except Exception as e:
+            self.debug_print("[ERROR] Big_Data error: " + ''.join(traceback.format_exception(e)))
+            self.facestring = ["EXCEPTION"] * 5  # Prevent crash
+
+        return self.facestring
+    
+    def listen(self):
+        import cdh
+        #This just passes the message through. Maybe add more functionality later. 
+        try:
+            self.debug_print("Listening")
+            
+            
+            # Change timeout back to 10
+            self.cubesat.radio1.receive_timeout=10
+            received = self.cubesat.radio1.receive_with_ack(keep_listening=True)
+        except Exception as e:
+            self.debug_print("An Error has occured while listening: " + ''.join(traceback.format_exception(e)))
+            received=None
+
+        try:
+            if received is not None:
+                self.debug_print("Recieved Packet: "+str(received))
+                cdh.message_handler(self.cubesat,received)
+                return True
+        except Exception as e:
+            self.debug_print("An Error has occured while handling command: " + ''.join(traceback.format_exception(e)))
+        finally:
+            del cdh
+        
+        return False
+    
     def format_state_of_health(self, hardware):
         to_return = ""
         for key, value in hardware.items():
@@ -139,8 +285,7 @@ class functions:
                 return to_return
 
         return to_return
-        
-
+    
     def state_of_health(self):
         import Field
         self.state_list=[]
@@ -178,7 +323,7 @@ class functions:
             self.state_bool=False
         del self.field
         del Field
-
+    
     def send_face(self):
         """Calls the data transmit function from the field class"""
         import Field
@@ -212,93 +357,7 @@ class functions:
         finally:
             del self.field
             del Field
-
-
-    
-    def listen(self):
-        import cdh
-        #This just passes the message through. Maybe add more functionality later. 
-        try:
-            self.debug_print("Listening")
-            # Change timeout back to 10
-            self.cubesat.radio1.receive_timeout=10
-            received = self.cubesat.radio1.receive_with_ack(keep_listening=True)
-        except Exception as e:
-            self.debug_print("An Error has occured while listening: " + ''.join(traceback.format_exception(e)))
-            received=None
-
-        try:
-            if received is not None:
-                self.debug_print("Recieved Packet: "+str(received))
-                cdh.message_handler(self.cubesat,received)
-                return True
-        except Exception as e:
-            self.debug_print("An Error has occured while handling command: " + ''.join(traceback.format_exception(e)))
-        finally:
-            del cdh
-        
-        return False
-    
-    def listen_joke(self):
-        try:
-            self.debug_print("Listening")
-            self.cubesat.radio1.receive_timeout=10
-            received = self.cubesat.radio1.receive(keep_listening=True)
-            if received is not None and "HAHAHAHAHA!" in received:
-                return True
-            else:
-                return False
-        except Exception as e:
-            self.debug_print("An Error has occured while listening: " + ''.join(traceback.format_exception(e)))
-            received=None
-            return False
-
-    '''
-    Big_Data Face Functions
-    change to remove fet values, move to pysquared
-    '''  
-    def face_toggle(self,face,state):
-        dutycycle = 0x0000
-        if state:
-            duty_cycle=0xffff
-        
-        if   face == "Face0": self.cubesat.Face0.duty_cycle = duty_cycle      
-        elif face == "Face1": self.cubesat.Face0.duty_cycle = duty_cycle
-        elif face == "Face2": self.cubesat.Face0.duty_cycle = duty_cycle      
-        elif face == "Face3": self.cubesat.Face0.duty_cycle = duty_cycle           
-        elif face == "Face4": self.cubesat.Face0.duty_cycle = duty_cycle          
-        elif face == "Face5": self.cubesat.Face0.duty_cycle = duty_cycle
-    
-    def all_face_data(self):
-        self.cubesat.all_faces_on()
-        try:
-            import Big_Data
-            a = Big_Data.AllFaces(self.debug, self.cubesat.tca)
-
-            self.debug_print("[DEBUG] Running Face_Test_All()...")
-            facestring_data = a.Face_Test_All()
-            self.debug_print(f"[DEBUG] Face_Test_All() returned: {facestring_data}")
-
-            # Validate facestring_data before assigning
-            if not isinstance(facestring_data, list):
-                self.debug_print(f"[ERROR] Face_Test_All() did not return a list! Value: {facestring_data}")
-                self.facestring = ["ERROR"] * 5  # Default fallback
-            elif len(facestring_data) < 5:
-                self.debug_print(f"[ERROR] Face_Test_All() returned too few elements: {facestring_data}")
-                self.facestring = facestring_data + ["MISSING"] * (5 - len(facestring_data))  # Pad list
-            else:
-                self.facestring = facestring_data  # Assign valid data
-
-            del a
-            del Big_Data
-
-        except Exception as e:
-            self.debug_print("[ERROR] Big_Data error: " + ''.join(traceback.format_exception(e)))
-            self.facestring = ["EXCEPTION"] * 5  # Prevent crash
-
-        return self.facestring
-
-    
+            
     def get_imu_data(self):
         
         self.cubesat.all_faces_on()
@@ -312,40 +371,25 @@ class functions:
         
         return data
     
-    def OTA(self):
-        # resets file system to whatever new file is received
-        pass
-
-    '''
-    Logging Functions
-    '''  
-    def log_face_data(self,data):
+    def send(self,msg):
+        """Calls the RFM9x to send a message. Currently only sends with default settings.
         
-        self.debug_print("Logging Face Data")
-        try:
-                self.cubesat.log("/faces.txt",data)
-        except:
-            try:
-                self.cubesat.new_file("/faces.txt")
-            except Exception as e:
-                self.debug_print('SD error: ' + ''.join(traceback.format_exception(e)))
+        Args:
+            msg (String,Byte Array): Pass the String or Byte Array to be sent. 
+        """
+        import Field
+        self.field = Field.Field(self.cubesat,self.debug)
+        message=f"{self.callsign} " + str(msg) + f" {self.callsign}"
+        self.field.Beacon(message)
+#         if self.cubesat.f_fsk:
+#             self.cubesat.radio1.cw(message)
+        if self.cubesat.is_licensed:
+            self.debug_print(f"Sent Packet: " + message)
+        else:
+            self.debug_print("Failed to send packet")
+        del self.field
+        del Field
         
-    def log_error_data(self,data):
-        
-        self.debug_print("Logging Error Data")
-        try:
-                self.cubesat.log("/error.txt",data)
-        except:
-            try:
-                self.cubesat.new_file("/error.txt")
-            except Exception as e:
-                self.debug_print('SD error: ' + ''.join(traceback.format_exception(e)))
-    
-    '''
-    Misc Functions
-    '''  
-    #Goal for torque is to make a control system 
-    #that will adjust position towards Earth based on Gyro data
     def detumble(self,dur = 7, margin = 0.2, seq = 118):
         self.debug_print("Detumbling")
         self.cubesat.RGB=(255,255,255)
@@ -396,29 +440,168 @@ class functions:
         except Exception as e:
             self.debug_print('Detumble error: ' + ''.join(traceback.format_exception(e)))
         self.cubesat.RGB=(100,100,50)
-        
     
-    def Short_Hybernate(self):
-        self.debug_print("Short Hybernation Coming UP")
+    # PCB Communication Functions with Fixes:
+    
+    def pcb_comms(self):
+        """Main PCB communications routine."""
+        self.debug_print("Yapping to the PCB now - D")
         gc.collect()
-        #all should be off from cubesat powermode
-        self.cubesat.all_faces_off()
-        self.cubesat.enable_rf.value=False
-        self.cubesat.f_softboot=True
-        time.sleep(120)
-        self.cubesat.all_faces_on()
-        self.cubesat.enable_rf.value=True
-        return True
-    
-    def Long_Hybernate(self):
-        self.debug_print("LONG Hybernation Coming UP")
+        image_count = 1
+        image_dir = "/sd"
+
+        # Check that the SD card is accessible and get the list of existing files.
+        existing_files = self.get_existing_files(image_dir)
+        if existing_files is None:
+            self.debug_print("[ERROR] SD card not detected or cannot be accessed!")
+            gc.collect()
+            return
+
         gc.collect()
-        #all should be off from cubesat powermode
-        self.cubesat.all_faces_off()
-        self.cubesat.enable_rf.value=False
-        self.cubesat.f_softboot=True
-        time.sleep(600)
-        self.cubesat.all_faces_on()
-        self.cubesat.enable_rf.value=True
-        return True
+        self.debug_print(f"[DEBUG] Free memory before communication start: {gc.mem_free()} bytes")
+
+        # Initialize communication objects.
+        com1, fcb_comm = self.initialize_comms()
+        if com1 is None or fcb_comm is None:
+            return
+
+        # Process communication cycles.
+        self.process_communication(com1, fcb_comm, image_dir, existing_files, image_count)
+
+        # Cleanup communication objects.
+        self.cleanup_comms(com1, fcb_comm)
+
+    def get_existing_files(self, image_dir):
+        """Attempt to list files on the SD card. Returns a set of filenames or None on failure."""
+        try:
+            return set(os.listdir(image_dir))
+        except OSError:
+            return None
+
+    def initialize_comms(self):
+        """Initializes the communication objects."""
+        try:
+            # Lazy import of hardware-specific modules to defer heavy initialization.
+            from board import TX, RX
+            from easy_comms_circuit import EasyComms
+            from FCB_class import FCBCommunicator
+
+            com1 = EasyComms(TX, RX, baud_rate=9600)
+            com1.start()
+            fcb_comm = FCBCommunicator(com1)
+            return com1, fcb_comm
+        except Exception as e:
+            self.debug_print(f"[ERROR] Failed to initialize communication: {str(e)}")
+            return None, None
+
+    def process_communication(self, com1, fcb_comm, image_dir, existing_files, image_count):
+        """Runs the main communication loop."""
+        while True:
+            try:
+                self.debug_print(f"[DEBUG] Free memory before cycle: {gc.mem_free()} bytes")
+                # Read an overhead command (if any) – this may be used to drive logic.
+                overhead_command = com1.overhead_read()
+
+                # For our example, we assume a "chunk" command is desired.
+                command = 'chunk'
+                if command.lower() == 'chunk':
+                    fcb_comm.send_command("chunk")
+                    if fcb_comm.wait_for_acknowledgment():
+                        time.sleep(1)  # Pause for stability.
+                        gc.collect()
+                        self.debug_print(f"[DEBUG] Free memory before data transfer: {gc.mem_free()} bytes")
+                        # Get the next available image filename.
+                        image_count = self.find_next_image_count(existing_files, image_count)
+                        # Write the image data to SD card.
+                        self.write_image(fcb_comm, image_dir, image_count)
+
+                # For demonstration, we end the communication cycle after the chunk.
+                command = 'end'
+                if command.lower() == 'end':
+                    fcb_comm.end_communication()
+
+            except MemoryError:
+                self.debug_print("[ERROR] MemoryError: Restarting communication cycle")
+                gc.collect()
+                continue  # Restart the cycle.
+            except Exception as e:
+                self.debug_print("[ERROR] PCB communication failed: " + traceback.format_exc())
+                break  # Break out of the loop after logging the error.
+
+    def find_next_image_count(self, existing_files, image_count):
+        """Find the next available image filename based on the current set of files."""
+        filename = f"inspireFly_Capture_{image_count}.jpg"
+        while filename in existing_files:
+            image_count += 1
+            filename = f"inspireFly_Capture_{image_count}.jpg"
+        return image_count
+
+    def write_image(self, fcb_comm, image_dir, image_count):
+        """Handles the image file writing process with safe allocation for each chunk."""
+        img_file_path = f"{image_dir}/inspireFly_Capture_{image_count}.jpg"
+        try:
+            with open(img_file_path, "wb") as img_file:
+                offset = 0
+                while True:
+                    # Force GC before each allocation attempt.
+                    gc.collect()
+                    # Use our safe chunk request to mitigate MemoryError.
+                    jpg_bytes = self.safe_send_chunk_request(fcb_comm)
+                    if jpg_bytes is None:
+                        self.debug_print("[ERROR] Failed to allocate memory for chunk after retries.")
+                        break  # Abort the transfer if allocation fails.
+                    if not jpg_bytes:
+                        # End-of-data condition.
+                        break
+                    img_file.write(jpg_bytes)
+                    offset += len(jpg_bytes)
+                    del jpg_bytes
+                    if offset % 1024 == 0:
+                        gc.collect()
+                gc.collect()  # Final GC after the loop.
+                self.debug_print(f"[INFO] Finished writing image. Data size: {offset} bytes")
+        except OSError as e:
+            self.debug_print(f"[ERROR] Writing to SD card failed: {str(e)}")
+
+    def safe_send_chunk_request(self, fcb_comm, retries=3, delay=0.1):
+        """
+        Attempts to retrieve a data chunk from the PCB.
+        If a MemoryError occurs (e.g., failing to allocate ~472 bytes), forces garbage collection
+        and retries a few times before giving up.
+        """
+        for attempt in range(retries):
+            try:
+                return fcb_comm.send_chunk_request()
+            except MemoryError:
+                self.debug_print(f"[WARN] MemoryError during chunk request, retry {attempt+1}/{retries}.")
+                gc.collect()
+                time.sleep(delay)
+        return None
+
+    def cleanup_comms(self, com1, fcb_comm):
+        """Closes communication objects and frees resources."""
+        try:
+            com1.close()
+        except Exception:
+            pass
+        del com1, fcb_comm
+        gc.collect()
+        self.debug_print(f"[DEBUG] Free memory after cleanup: {gc.mem_free()} bytes")
+
+    # ... Remaining methods of your class remain unchanged ...
     
+    def overhead_send(self, msg):
+        """Lightweight function to initialize UART and send overhead data."""
+        try:
+            from board import TX, RX
+            from easy_comms_circuit import EasyComms
+
+            com1 = EasyComms(TX, RX, baud_rate=9600)
+#             com1.start()
+            com1.overhead_send(msg)
+            self.debug_print(f"[INFO] Overhead data sent: {msg}")
+        except Exception as e:
+            self.debug_print(f"[ERROR] Failed to send overhead data: {str(e)}")
+        finally:
+            if 'com1' in locals():
+                com1.close()

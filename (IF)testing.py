@@ -1,23 +1,19 @@
-import board
-import sys
-print(dir(board))
+
+send_command = 40
+
+total_packets = 456
 
 
-print("")
-print(sys.path)
-print("")
-sys.path.append("/sd")
-print(sys.path)
+send_message = str(send_command.to_bytes(1, 'big') + total_packets.to_bytes(2, 'big'))
+print(send_message)
+print("Sending: ", send_message[2:-1])
 
-print("")
-#print("A0:", board.A0)
-print("D0:", board.D0)
-print("")
-#print("VOLTAGE_MONITOR: ", board.VOLTAGE_MONITOR)
-print("RF1_RST:", board.RF1_RST)
-#print("A3: ", board.A3)
-print("RF1_IO0:", board.RF1_IO0)
-print("RF1_IO4:", board.RF1_IO4)
-#print("GP11: ", board.GP11)
-print("")
-#print("GP15: ", board.GP15)
+print("----------")
+
+num = b'\x16'
+print(int.from_bytes(num, 'big'))
+
+print("-----------")
+string = "K4KDJ"
+stringBytes = bytearray(string, "utf-8")
+print(stringBytes)

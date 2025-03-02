@@ -1,5 +1,7 @@
 import time
 import random
+import functions
+from FCB_class import FCBCommunicator as fcb
 
 # our 4 byte code to authorize commands
 # pass-code for DEMO PURPOSES ONLY
@@ -8,15 +10,41 @@ jokereply=["Your Mom","Your Mum","Your Face","not True lol","I have brought peac
 # pass-code for DEMO PURPOSES ONLY
 super_secret_code = b'' #put your own code here
 print(f"Super secret code is: {super_secret_code}")
+
+# com1 = EasyComms(board.TX, board.RX, baud_rate=9600)
+# fcb_comm = FCBCommunicator(com1)
+
+# Bronco's commands
+# commands = {
+#     b'\x8eb':    'noop',
+#     b'\xd4\x9f': 'hreset',   # new
+#     b'\x12\x06': 'shutdown',
+#     b'8\x93':    'query',    # new
+#     b'\x96\xa2': 'exec_cmd',
+#     b'\xa5\xb4': 'joke_reply',
+#     b'\x56\xc4': 'FSK'
+# }
+
+# inspireFly commands
 commands = {
-    b'\x8eb':    'noop',
-    b'\xd4\x9f': 'hreset',   # new
-    b'\x12\x06': 'shutdown',
-    b'8\x93':    'query',    # new
-    b'\x96\xa2': 'exec_cmd',
-    b'\xa5\xb4': 'joke_reply',
-    b'\x56\xc4': 'FSK'
+    b'\x10':    'noop',
+    b'\x11': 'hreset',   # new
+    b'\x12': 'shutdown',
+    b'\x13':    'query',    # new
+    #b'\x14': 'exec_cmd',   # not getting implemented
+    b'\x15': 'joke_reply',
+    b'\x16': 'send_SOH',
+    b'\x31': 'take_pic',
+    b'\x32': 'send_pic',
+    b'\x34': 'receive_pic',
+    b'\x1C': 'mag_on',
+    b'\x1D': 'mag_off',
+    b'\x1E': 'burn_on',
+    b'\x1F': 'heat_on',
 }
+
+transmit_image_running = False
+
 ############### hot start helper ###############
 def hotstart_handler(cubesat,msg):
     # try
@@ -38,6 +66,36 @@ def hotstart_handler(cubesat,msg):
 
 ############### message handler ###############
 def message_handler(cubesat,msg):
+    
+    print("Handling a message")
+    
+    # inspireFly - this code should eventually be swapped out with our own command processor which will pull
+    # out the important data such as the command
+    
+    f = functions.functions(cubesat)
+    
+    command = bytearray()
+    command.append(0x31)
+    
+    if(msg[5:6] == 0x15):
+        f.joke_reply()
+    elif(msg[5:6] == 0x31):
+        f.pcb_comms()
+        
+    elif(msg in command):
+        packetIndex = (msg[7:31]) #999999 is 20 bits long, should be able to handle any packet index request
+        print("Transmitting image")
+        print(packetIndex)
+        f.overhead_send(b'\x31\n')
+
+        time.sleep(0.5)
+        f.pcb_comms()
+
+    
+    print("Comparing ", msg, " to ", command)
+    
+    print(list(msg))
+
     multi_msg=False
     if len(msg) >= 10: # [RH header 4 bytes] [pass-code(4 bytes)] [cmd 2 bytes]
         if bytes(msg[4:8])==super_secret_code:
@@ -80,9 +138,24 @@ def message_handler(cubesat,msg):
                     message_handler(cubesat,response)
         else:
             print('bad code?')
+            
+        del f
 
 
 ########### commands without arguments ###########
+
+def take_pic(cubesat):
+    #TO-DO
+    return
+
+def send_pic(cubesat):
+    #TO-DO
+    return
+
+def send_SOH(cubesat):
+    #TO-DO
+    return
+
 def noop(cubesat):
     print('no-op')
     pass
@@ -141,4 +214,7 @@ def query(cubesat,args):
 def exec_cmd(cubesat,args):
     print(f'exec: {args}')
     exec(args)
+    
+# def set_image_transfer_running(boolean):
+#     global image_transfer_running = boolean
     
