@@ -84,12 +84,12 @@ def message_handler(cubesat,msg):
         
     elif(msg in command):
         packetIndex = (msg[7:31]) #999999 is 20 bits long, should be able to handle any packet index request
-        print("Transmitting image")
+#         print("Transmitting image")
         print(packetIndex)
-        f.overhead_send(b'\x31\n')
+        f.overhead_send(b'\x31')
 
-        time.sleep(0.5)
-        f.pcb_comms()
+#         time.sleep(0.5)
+#         f.pcb_comms()
 
     
     print("Comparing ", msg, " to ", command)

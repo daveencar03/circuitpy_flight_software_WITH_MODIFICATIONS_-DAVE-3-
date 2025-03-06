@@ -277,7 +277,7 @@ class RFM9xFSK(RFMSPI):
         
         
         self.bitrate = 9600 # Was 250000  # 250kbs
-        self.frequency_deviation = 250000 # Was 250000  # 250khz
+        self.frequency_deviation = 100000 # Was 250000  # 250khz
         self.rx_bw_mantissa = 0b00
         self.rx_bw_exponent = 0b000
         self.afc_bw_mantissa = 0b00

@@ -391,8 +391,8 @@ class Satellite:
         try:
             #self.radio1 = pysquared_rfm9x.RFM9x(self.spi0, board.SPI0_CS0, board.RF1_RST,self.radio_cfg['freq'],code_rate=8,baudrate=1320000)
             
-            #self.radio1 = pysquared_rfm9x.RFM9x(self.spi0, _rf_cs1, _rf_rst1,self.radio_cfg['freq'],code_rate=8,baudrate=1320000)
-            if self.f_fsk:
+            self.radio1 = pysquared_rfm9x.RFM9x(self.spi0, _rf_cs1, _rf_rst1,self.radio_cfg['freq'],code_rate=8,baudrate=1320000)
+            if True:
                 self.debug_print("Setting radio to rfm9xfsk")
                 self.radio1 = rfm9xfsk.RFM9xFSK(
                     self.spi0,

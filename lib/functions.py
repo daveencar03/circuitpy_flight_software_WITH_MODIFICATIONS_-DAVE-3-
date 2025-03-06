@@ -114,68 +114,6 @@ class functions:
         print("Finished Sending Image")
             
             
-                    
-                
-                
-            
-            
-        
-        
-        
-#         file_path = "blue.jpg"
-#         file_info = os.stat(file_path)
-#         file_size = file_info[6]  # The 7th item in the stat tuple is the file size
-#         print(f"Image size: ", file_size)
-#         
-#         bytes_per_packet = 10
-#         total_packets = math.ceil(file_size / bytes_per_packet)
-#         print(total_packets)
-#         
-#         counter = 0
-#         jpg_file = open(r"blue.jpg", 'rb')
-#         firstPacketHandshake = False
-#         while not firstPacketHandshake:
-#             self.send(total_packets)
-#             if self.listen():
-#                 firstPacketHandshake = True
-#             time.sleep(0.1)
-#         
-#         while True:   
-#             jpg_bytes = jpg_file.read(bytes_per_packet)
-#             if not jpg_bytes:
-#                 return
-#             self.send(jpg_bytes)        
-#             print("sent: ", jpg_bytes)
-#             counter += bytes_per_packet
-#             print("Sent this many bytes: ", counter)
-#             while not self.listen():
-#                 self.send(jpg_bytes)
-#                 
-#         self.send(0xFF)
-    
-#     # This method is just for testing
-#     def TransmitImageTest(self):
-#         import cdh
-#         counter = 0
-#         jpg_file = open(r"blue.jpg", 'rb')
-#         bytes_per_packet = 5
-#         bytesRemaining = True
-#         
-#         while bytesRemaining:
-#             jpg_bytes = jpg_file.read(bytes_per_packet)
-#             if not jpg_bytes:
-#                 bytesRemaining = False
-#                 return
-#             self.send(jpg_bytes)
-#             print("sent: ", jpg_bytes)
-#             print(counter, " bytes sent, ", len(jpg_bytes) - counter, " bytes left.")
-#             counter += bytes_per_packet
-#             while not self.listen():
-#                 time.sleep(0.5)
-#                 self.send(jpg_bytes)
-#         self.send(0xFF)
-#         cdh.set_transmit_image_running(False)
-#         del cdh
 
     def debug_print(self, statement):
         if self.debug:

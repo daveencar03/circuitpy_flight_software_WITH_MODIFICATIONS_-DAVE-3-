@@ -1,7 +1,7 @@
-Adafruit CircuitPython 9.0.5-3-g23fd2e339d-dirty on 2024-09-27; PySquaredFCv4 with rp2040
-Board ID:pysquared_rp2040_flight_controller_v1a
-UID:E46420C403315330
-[2K[0Gboot.py output:
+Adafruit CircuitPython 9.1.4-dirty on 2024-10-05; PySquaredFCv4 with rp2040
+Board ID:pysquared
+UID:E46420C4031A1330
+boot.py output:
 Traceback (most recent call last):
   File "boot.py", line 3, in <module>
 AttributeError: 'module' object has no attribute 'set_next_stack_limit'
