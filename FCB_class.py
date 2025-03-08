@@ -60,7 +60,6 @@ class FCBCommunicator:
             self.send_command(message)
             print(f"Sent request for chunks: {message}")
             time.sleep(1)
-            self.send_command("acknowledge")
 
             try:
                 # Try to read bytes from the given chunks
@@ -87,6 +86,14 @@ class FCBCommunicator:
             self.image_counter += 1
         except OSError as e:
             print(f"Failed to write file: {e}")
+            
+    def clear_chunk_buffer(self):
+        """Clears the last processed chunk from memory to free up space."""
+        if self.current_chunk:
+            del self.current_chunk  # Remove reference to chunk data
+            self.current_chunk = None
+            gc.collect()  # Force garbage collection
+            print("[DEBUG] Chunk buffer cleared, memory freed.")
 
     def end_communication(self):
         time.sleep(3)

@@ -51,13 +51,13 @@ class EasyComms:
             time.sleep(2)  # Wait for bytes
             if self.uart.in_waiting > 0:  # Check if there are bytes to read
                 data = self.uart.read(chunksize)
-                print("Data", data)
+#                 print("Data", data)
                 
                 # CRC Check
                 crctagbb = data[-2:]  # Grab CRC from incoming chunk
                 chunknum = data[:2]  # Grab chunk number from incoming chunk
-                print("Chunk number: ", chunknum)
-                print("Crc tagbb: ", crctagbb)
+#                 print("Chunk number: ", chunknum)
+#                 print("Crc tagbb: ", crctagbb)
                 
                 crctagb = int.from_bytes(crctagbb, 'little')  # Convert CRC bytes to integer
                 stripped_data = data[:-2]  # Strip off CRC tag from chunk
@@ -73,7 +73,7 @@ class EasyComms:
                     # If chunk is corrupted
                     while crctaga != crctagb:
                         request = "Chunk has an error."
-                        print(request, i)
+#                         print(request, i)
                         self.overhead_send(request)
                     print("Successfully received chunk!")
             print("Chunk Byte length: ", len(message))

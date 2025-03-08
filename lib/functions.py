@@ -28,11 +28,11 @@ class functions:
 
     def transmit_image(self):
         
-        file_path = "blue.jpg"
+        file_path = f"/sd/inspireFly_Capture_45.jpg"
         file_info = os.stat(file_path)
         file_size = file_info[6]  # The 7th item in the stat tuple is the file size
         print(f"Image size: ", file_size)
-        image = open(r"blue.jpg", 'rb') 
+        image = open(file_path, 'rb') 
         
         
         bytes_per_packet = 10
@@ -57,8 +57,8 @@ class functions:
             #send_message = send_command.to_bytes(1, 'big') + total_packets.to_bytes(2, 'big')
             print("Sending: ", send_message)
             
-            #for i in range(1):
-            self.cubesat.radio1.send(send_message)
+            for i in range(100):
+                self.cubesat.radio1.send(send_message)
             
             
             time.sleep(0.1)
@@ -92,11 +92,12 @@ class functions:
                             for i in range(10):
                                 self.cubesat.radio1.send(message)
                                 
-                            packet = self.cubesat.radio1.receive()           
+                            packet = self.cubesat.radio1.receive(timeout=1)           
                             print("Received packet in bugging part: ", packet)
                             
                             if packet:
                                 if int.from_bytes(packet[1:3], "big") == current_packet_index + 1:
+                                    print("Breaking out of bugging part and moving on to next packet!")
                                     break
                         
                         current_packet = image.read(bytes_per_packet)
@@ -378,6 +379,53 @@ class functions:
         except Exception as e:
             self.debug_print('Detumble error: ' + ''.join(traceback.format_exception(e)))
         self.cubesat.RGB=(100,100,50)
+            
+        
+        
+    def battery_heater(self):
+        """
+        Battery Heater Function reads temperature at the end of the thermocouple and tries to 
+        warm the batteries until they are roughly +4C above what the batteries should normally sit(this 
+        creates a band stop in which the battery heater never turns off) The battery heater should not run
+        forever, so a time based stop is implemented
+        """
+        try:
+            try:
+                import Big_Data
+                a = Big_Data.AllFaces(self.debug,self.cubesat.tca)
+                
+                self.last_battery_temp = a.Get_Thermo_Data()
+            except Exception as e:
+                self.debug_print("[ERROR] couldn't get thermocouple data!" + ''.join(traceback.format_exception(e)))
+                raise Exception("Thermocouple failure!")
+
+            if self.last_battery_temp < self.cubesat.NORMAL_BATT_TEMP:
+                end_time=0
+                self.cubesat.heater_on()
+                while self.last_battery_temp < self.cubesat.NORMAL_BATT_TEMP+4 and end_time<5:
+                    time.sleep(1)
+                    self.last_battery_temp = a.Get_Thermo_Data()
+                    end_time+=1
+                    self.debug_print(str(f"Heater has been on for {end_time} seconds and the battery temp is {self.last_battery_temp}C"))
+                self.cubesat.heater_off()
+                del a
+                del Big_Data
+                return True
+            else: 
+                self.debug_print("Battery is already warm enough")
+                del a
+                del Big_Data
+                return False
+        except Exception as e:
+            self.cubesat.heater_off()
+            self.debug_print("Error Initiating Battery Heater" + ''.join(traceback.format_exception(e)))
+            del a
+            del Big_Data
+            return False
+        finally:
+            self.cubesat.heater_off()
+        
+        
     
     # PCB Communication Functions with Fixes:
     
@@ -448,15 +496,18 @@ class functions:
                         time.sleep(1)  # Pause for stability.
                         gc.collect()
                         self.debug_print(f"[DEBUG] Free memory before data transfer: {gc.mem_free()} bytes")
+                        fcb_comm.send_command("acknowledge")
                         # Get the next available image filename.
                         image_count = self.find_next_image_count(existing_files, image_count)
                         # Write the image data to SD card.
                         self.write_image(fcb_comm, image_dir, image_count)
+                        
 
                 # For demonstration, we end the communication cycle after the chunk.
                 command = 'end'
                 if command.lower() == 'end':
                     fcb_comm.end_communication()
+                    break
 
             except MemoryError:
                 self.debug_print("[ERROR] MemoryError: Restarting communication cycle")
@@ -476,30 +527,36 @@ class functions:
 
     def write_image(self, fcb_comm, image_dir, image_count):
         """Handles the image file writing process with safe allocation for each chunk."""
-        img_file_path = f"{image_dir}/inspireFly_Capture_{image_count}.jpg"
+        img_file_path = f"/sd/inspireFly_Capture_{image_count}.jpg"
         try:
             with open(img_file_path, "wb") as img_file:
                 offset = 0
                 while True:
-                    # Force GC before each allocation attempt.
-                    gc.collect()
-                    # Use our safe chunk request to mitigate MemoryError.
+                    gc.collect()  # Force GC before requesting new chunk
+                    
                     jpg_bytes = self.safe_send_chunk_request(fcb_comm)
+                    
                     if jpg_bytes is None:
                         self.debug_print("[ERROR] Failed to allocate memory for chunk after retries.")
-                        break  # Abort the transfer if allocation fails.
+                        break  # Abort transfer if allocation fails.
+                    
                     if not jpg_bytes:
-                        # End-of-data condition.
-                        break
+                        self.debug_print("[INFO] No more chunks received, finishing image.")
+                        break  # Properly finish writing when no more chunks arrive
+                    
+                    self.debug_print(f"[DEBUG] Received chunk of {len(jpg_bytes)} bytes.")
                     img_file.write(jpg_bytes)
                     offset += len(jpg_bytes)
-                    del jpg_bytes
-                    if offset % 1024 == 0:
-                        gc.collect()
-                gc.collect()  # Final GC after the loop.
-                self.debug_print(f"[INFO] Finished writing image. Data size: {offset} bytes")
+
+                    del jpg_bytes  # Free memory
+                    gc.collect()
+
+                    self.debug_print(f"[INFO] Finished writing image. Data size: {offset} bytes")
+                    
+                    break
         except OSError as e:
             self.debug_print(f"[ERROR] Writing to SD card failed: {str(e)}")
+
 
     def safe_send_chunk_request(self, fcb_comm, retries=3, delay=0.1):
         """

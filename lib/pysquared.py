@@ -15,8 +15,8 @@ from debugcolor import co
 import gc
 import os
 # Hardware Specific Libs
-import pysquared_rfm9x  # Radio
-import rfm9x 			#Radio
+#import pysquared_rfm9x  # Radio
+#import rfm9x 			#Radio
 import rfm9xfsk 		#More Radio
 import neopixel         # RGB LED
 import adafruit_pca9685 # LED Driver
@@ -388,42 +388,19 @@ class Satellite:
         """
 
         # Initialize radio #1 - UHF
-        try:
-            #self.radio1 = pysquared_rfm9x.RFM9x(self.spi0, board.SPI0_CS0, board.RF1_RST,self.radio_cfg['freq'],code_rate=8,baudrate=1320000)
-            
-            self.radio1 = pysquared_rfm9x.RFM9x(self.spi0, _rf_cs1, _rf_rst1,self.radio_cfg['freq'],code_rate=8,baudrate=1320000)
-            if True:
-                self.debug_print("Setting radio to rfm9xfsk")
-                self.radio1 = rfm9xfsk.RFM9xFSK(
-                    self.spi0,
-                    _rf_cs1,
-                    _rf_rst1,
-                    self.radio_cfg["freq"],
-                    # code_rate=8, code rate does not exist for RFM9xFSK
-                )
-                self.radio1.fsk_node_address = 1
-                self.radio1.fsk_broadcast_address = 0xFF
-                self.radio1.modulation_type = 0
-            else:
-                 print ("This is wrong")
-#                 # Default LoRa Modulation Settings
-#                 # Frequency: 437.4 MHz, SF7, BW125kHz, CR4/8, Preamble=8, CRC=True
-#                 self.radio1 = rfm9x.RFM9x(
-#                     self.spi0,
-#                     _rf_cs1,
-#                     _rf_rst1,
-#                     self.radio_cfg["freq"],
-#                     # code_rate=8, code rate does not exist for RFM9xFSK
-#                 )
-#                 self.radio1.max_output = True
-#                 self.radio1.tx_power = self.radio_cfg["pwr"]
-#                 self.radio1.spreading_factor = self.radio_cfg["sf"]
-# 
-#                 self.radio1.enable_crc = True
-#                 self.radio1.ack_delay = 0.2
-#                 if self.radio1.spreading_factor > 9:
-#                     self.radio1.preamble_length = self.radio1.spreading_factor
-            
+        try:            
+            # self.radio1 = pysquared_rfm9x.RFM9x(self.spi0, _rf_cs1, _rf_rst1,self.radio_cfg['freq'],code_rate=8,baudrate=1320000)
+            self.radio1 = rfm9xfsk.RFM9xFSK(
+                self.spi0,
+                _rf_cs1,
+                _rf_rst1,
+                self.radio_cfg["freq"],
+                # code_rate=8, code rate does not exist for RFM9xFSK
+            )
+            self.radio1.fsk_node_address = 1
+            self.radio1.fsk_broadcast_address = 0xFF
+            self.radio1.modulation_type = 0
+      
             
             # Default LoRa Modulation Settings
             # Frequency: 437.4 MHz, SF7, BW125kHz, CR4/8, Preamble=8, CRC=True
@@ -444,11 +421,6 @@ class Satellite:
             self.hardware["Radio1"] = True 
         except Exception as e:
             self.debug_print('[ERROR][RADIO 1]' + ''.join(traceback.format_exception(e)))
-        
-        num = 0
-        while num is not 10:
-            self.radio1.send(bytes("hi" + str(num),"utf-8"))
-            num = num + 1
 
         # Prints init state of PySquared hardware
         self.debug_print(str(self.hardware))
@@ -682,9 +654,6 @@ class Satellite:
     @property
     def uptime(self):
         self.CURRENTTIME=const(time.time())
-        print("(iF) CURRENTTIME: ", self.CURRENTTIME)
-        print("(iF) BOOTTIME: ", self.BOOTTIME)
-        print("(iF) UPTIME: ", self.UPTIME)
         return self.CURRENTTIME-self.BOOTTIME
 
     @property
@@ -1057,82 +1026,8 @@ class Satellite:
                         self.f_triedburn = False
                         break
 
-            distance2=self.distance()
-            
-            
-            #Weird strange burnwire stuff that i'm disregarding
-            """
-            try:
-                distance1=self.distance()
-                self.debug_print(str(distance1))
-                if distance1 > self.dist+2 and distance1 > 4 or self.f_triedburn == True:
-                    self.burned = True
-                    self.f_brownout = True
-                    raise TypeError("Wire seems to have burned and satellite browned out")
-                else:
-                    self.dist=int(distance1)
-                    self.burnarm=True
-                if self.burnarm:
-                    self.burnarm=False
-                    self.f_triedburn = True
+            distance2=self.distance()    
 
-                    # Configure the relay control pin & open relay
-                    self.RGB=(0,165,0)
-
-                    self._relayA.drive_mode=digitalio.DriveMode.PUSH_PULL
-                    self.RGB=(255,165,0)
-                    self._relayA.value = 1
-
-                    # Pause to ensure relay is open
-                    time.sleep(0.5)
-
-                    #Start the Burn
-                    burnwire.duty_cycle=dtycycl
-
-                    #Burn Timer
-                    start_time = time.monotonic()
-
-                    #Monitor the burn
-                    while not self.burned:
-                        distance2=self.distance()
-                        self.debug_print(str(distance2))
-                        if distance2 > distance1+1 or distance2 > 10:
-                            self._relayA.value = 0
-                            burnwire.duty_cycle = 0
-                            self.burned=True
-                            self.f_triedburn = False
-                        else:
-                            distance1=distance2
-                            time_elapsed = time.monotonic() - start_time
-                            print("Time Elapsed: " + str(time_elapsed))
-                            if time_elapsed > 4:
-                                self._relayA.value = 0
-                                burnwire.duty_cycle = 0
-                                self.burned=False
-                                self.RGB=(0,0,255)
-                                time.sleep(10)
-                                self.f_triedburn = False
-                                break
-
-                    time.sleep(5)
-                    distance2=self.distance()
-                else:
-                    pass
-                if distance2 > distance1+2 or distance2 > 10:
-                    self.burned=True
-                    self.f_triedburn = False
-            except Exception as e:
-                self.debug_print("Error in Burn Sequence: " + ''.join(traceback.format_exception(e)))
-                self.debug_print("Error: " + str(e))
-                if "no attribute 'LiDAR'" in str(e):
-                    self.debug_print("Burning without LiDAR")
-                    time.sleep(120) #Set to 120 for flight
-                    self.burnarm=False
-                    self.burned=True
-                    self.f_triedburn=True
-                    self.burn("1",dutycycle,freq,4)
-                    time.sleep(5)
-            """
 
             # Clean up
             self._relayA.value = 0

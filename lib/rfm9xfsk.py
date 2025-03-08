@@ -289,7 +289,8 @@ class RFM9xFSK(RFMSPI):
         
         # Set transmit power to 13 dBm, a safe value any module supports.
         # self._tx_power = 13
-        self._tx_power = 5 # Was 13
+        # self._tx_power = 5 # Was 13 5 will be the real value in space
+        self._tx_power = 13
         
         
         self.tx_power = self._tx_power

@@ -34,6 +34,7 @@ commands = {
     #b'\x14': 'exec_cmd',   # not getting implemented
     b'\x15': 'joke_reply',
     b'\x16': 'send_SOH',
+    b'\x30': 'start_imgae_transfer',
     b'\x31': 'take_pic',
     b'\x32': 'send_pic',
     b'\x34': 'receive_pic',
@@ -74,19 +75,25 @@ def message_handler(cubesat,msg):
     
     f = functions.functions(cubesat)
     
-    command = bytearray()
-    command.append(0x31)
+    command = bytes(msg)
     
-    if(msg[5:6] == 0x15):
-        f.joke_reply()
-    elif(msg[5:6] == 0x31):
-        f.pcb_comms()
+#     command.append(commands)
+    if(command in commands):
+        if(command == b'\x15'):
+            f.joke_reply()
+        elif(command == b'\x31'):
+#             print(packetIndex)
+            f.overhead_send(b'\x31')
+        elif(command == b'\x32'):
+            f.overhead_send(b'\x32')
+            f.pcb_comms()
+        elif(command == b'\x30'):
+            print("Starting to transmit image")
+            f.transmit_image()
         
-    elif(msg in command):
+    elif(command in commands):
         packetIndex = (msg[7:31]) #999999 is 20 bits long, should be able to handle any packet index request
 #         print("Transmitting image")
-        print(packetIndex)
-        f.overhead_send(b'\x31')
 
 #         time.sleep(0.5)
 #         f.pcb_comms()

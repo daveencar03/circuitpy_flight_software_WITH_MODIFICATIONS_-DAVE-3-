@@ -16,11 +16,9 @@ from debugcolor import co
 from easy_comms_circuit import EasyComms
 import board
 from FCB_class import FCBCommunicator
-#from lib import rfm9xfsk
 import sdcardio
 import storage
 import busio
-import microcontroller
 import board
 import os
 # 
@@ -31,14 +29,14 @@ import os
 
 f=functions.functions(c)
 
-# # inspireFly Test Mode Loop !!!
+# # inspireFly Test Mode Loop !!
 # runOnce = True
 # while True:
 #     if runOnce:
 #         print("You are in inspireFly test mode. Comment this while loop out on line 34 in main")
 #         c.all_faces_on()
 #         runOnce = False
-#         f.transmit_image()
+#         #f.transmit_image()
 #     f.listen()
 #     #f.send(0xFF)
 #     #print("Done")
@@ -54,7 +52,7 @@ try:
     debug_print(str(gc.mem_free()) + " Bytes remaining")
 
     #power cycle faces to ensure sensors are on:
-    #c.all_faces_off()
+    c.all_faces_off()
     time.sleep(1)
     c.all_faces_on()
     #test the battery:
@@ -67,13 +65,12 @@ try:
     loiter_time = 270
     dutycycle=0.15
     done=True
-    debug_print("(iF) burn attempt status stuff")
     
+    debug_print("Attempting Burn Wire Process:")   
     for i in range(1):
         done = c.burn('1', dutycycle, 1000, 1.2)
         time.sleep(0.5)
-    #done = c.burn('1', dutycycle, 1000, 1)
-    #done=c.smart_burn('1',dutycycle)
+
 
 
     
@@ -131,7 +128,9 @@ try:
     f.listen()
 
     c.battery_manager()
-    #f.battery_heater()
+    
+    print("Free memory: ", str(gc.mem_free()))
+    f.battery_heater()
     c.battery_manager() #Second check to make sure we have enough power to continue
 
     f.beacon()
